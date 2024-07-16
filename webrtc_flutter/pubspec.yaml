@@ -1,0 +1,27 @@
+name: callapp
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.4 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+  socket_io_client: ^2.0.3+1
+  flutter_webrtc: ^0.9.32
+  flutter_background_service: ^5.0.6
+  awesome_notifications: ^0.9.3+1
+  awesome_notifications_core: ^0.9.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
