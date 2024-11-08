@@ -3,8 +3,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:callapp/service/signaling_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 
 
 class NotificationService{
@@ -109,7 +109,8 @@ class NotificationController {
   @pragma("vm:entry-point")
   static Future <void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     await Future.delayed(const Duration(seconds: 1), (){
-      FlutterBackgroundService().invoke('incoming-call');
+      // FlutterBackgroundService().invoke('incoming-call');
+      SignalService.stateController.sink.add(StateDataToUI.commingCall.name);
     } );
   }
   

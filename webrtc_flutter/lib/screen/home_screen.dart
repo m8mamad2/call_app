@@ -1,9 +1,9 @@
 
 import 'package:callapp/screen/call_screen.dart';
+import 'package:callapp/service/signaling_service.dart';
 import 'package:callapp/utils/constans/dialogs.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key,});
@@ -27,11 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
           alignment: Alignment.centerLeft,
           margin: const EdgeInsets.only(left: 20,top: 70),
           child: StreamBuilder(
-            stream: FlutterBackgroundService().on('you-are'),
+            stream:  SignalService.whoAreYouController.stream ,
             builder: (context, snapshot) {
               return Row(
                 children: [
-                  Text('Your Id is: ${snapshot.data?['data']['id'] ?? ''}',style: const TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                  Text('Your Id is: ${snapshot.data ?? ''}',style: const TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
                 ],
               );
             },
@@ -86,14 +86,15 @@ class _HomeScreenState extends State<HomeScreen> {
               const Expanded(child: SizedBox.shrink()),
 
               StreamBuilder(
-                stream: FlutterBackgroundService().on('you-are'),
+                stream: SignalService.whoAreYouController.stream,
                 builder: (context, snapshot) {
                   return Expanded(
                       child: InkWell(
                         onTap: () async{
                           if(numberController.text.isEmpty)return await errorDialgo(context, 'Please Enter a Number !');
 
-                          FlutterBackgroundService().invoke('start-call', {'data':numberController.text.trim()});
+                          SignalService.socket?.emit('start-call', {'data':numberController.text.trim()});
+
                             
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => CallScreen(isCaller: true, remoteId: numberController.text,),));

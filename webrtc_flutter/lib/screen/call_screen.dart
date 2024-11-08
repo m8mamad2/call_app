@@ -1,9 +1,9 @@
 import 'dart:developer';
 
+import 'package:callapp/service/signaling_service.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:callapp/utils/constans/webrtc_constans.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 
@@ -20,6 +20,8 @@ class _CallScreenState extends State<CallScreen> {
 
   final _localRTCRenderer = RTCVideoRenderer();
   final _remoteRTCRenderer = RTCVideoRenderer();
+
+  final socket = SignalService.socket;
   
   MediaStream? _localStream;
 
@@ -100,17 +102,22 @@ class _CallScreenState extends State<CallScreen> {
       _rtcPeerConnection!.onIceCandidate = (candidte)async=> 
         await Future.delayed( const Duration(seconds: 1), ()=> _iceCandidates.add(candidte));
 
-      FlutterBackgroundService().on('call-accepted').listen((data)async {
-        log('1234 In Accepted');
+      socket!.on('call-accepted', (data)async {
+
+        
+        SignalService.stateController.sink.add( StateDataToUI.exitCall.name );
+
         RTCSessionDescription offer = await _rtcPeerConnection!.createOffer();
         await _rtcPeerConnection!.setLocalDescription(offer);
         final dataToSend = { 'to': widget.remoteId, 'offer': offer.toMap(), };
-        FlutterBackgroundService().invoke('offer', dataToSend);
-      },);  
+        socket?.emit('offer', dataToSend);
 
-      FlutterBackgroundService().on('offer-answer').listen((data) async{
-          log('1234 Offer Answer');
-          RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
+        
+      },);
+
+      socket!.on('offer-answer',(data) async{
+        socket?.emit('offer-answer', data);
+        RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
           await _rtcPeerConnection?.setRemoteDescription(remoteOffer);
           for ( var iceCandidate in _iceCandidates ) {
             final data = {
@@ -121,61 +128,74 @@ class _CallScreenState extends State<CallScreen> {
                 "sdpMLineIndex": iceCandidate.sdpMLineIndex,
               }
             };
-            FlutterBackgroundService().invoke("ice-candidate",data);
-        }
+          socket?.emit("ice-candidate",data);
+          }
       },);
 
-      FlutterBackgroundService().on("ice-candidate").listen((data) async{
-        log('1234 in Ice Canidate');
+      socket!.on("ice-candidate", (data)async {
+        socket?.emit("ice-candidate",data);
         String candidate = data!["candidate"]["candidate"];
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
       },);
+      
     }
     if(!widget.isCaller){
 
-       _rtcPeerConnection!.onIceCandidate = (iceCandidate)async{
-          log('12345 in Send Candiate');
-          final data  = {
-                "to": widget.remoteId,
-                "candidate": {
-                  "sdpMid": iceCandidate.sdpMid,
-                  "candidate": iceCandidate.candidate,
-                  "sdpMLineIndex": iceCandidate.sdpMLineIndex,
-                }
-              };
-          FlutterBackgroundService().invoke("ice-candidate",data);
-      };
+      _rtcPeerConnection!.onIceCandidate = (iceCandidate)async{
+        log('12345 in Send Candiate');
+        final data  = {
+              "to": widget.remoteId,
+              "candidate": {
+                "sdpMid": iceCandidate.sdpMid,
+                "candidate": iceCandidate.candidate,
+                "sdpMLineIndex": iceCandidate.sdpMLineIndex,
+              }
+            };
+        socket?.emit("ice-candidate",data);
+    };
 
-      FlutterBackgroundService().on('offer').listen((data)async {
+      socket!.on('offer', (data)async {
           log('12345 in Offer');
-          await _rtcPeerConnection!.setRemoteDescription(
-            RTCSessionDescription(data!['offer']['sdp'], data['offer']['type'])
-          );
-          RTCSessionDescription? answer = await _rtcPeerConnection?.createAnswer();
-          _rtcPeerConnection!.setLocalDescription(answer!);
-          final dataForSend = { "answer": answer.toMap(), "to": widget.remoteId, };
-          FlutterBackgroundService().invoke("offer-answer", dataForSend);
-      },);
+            await _rtcPeerConnection!.setRemoteDescription(
+              RTCSessionDescription(data!['offer']['sdp'], data['offer']['type'])
+            );
+            RTCSessionDescription? answer = await _rtcPeerConnection?.createAnswer();
+            _rtcPeerConnection!.setLocalDescription(answer!);
+            final dataForSend = { "answer": answer.toMap(), "to": widget.remoteId, };
+            socket?.emit("offer-answer", dataForSend);
+            
+        },);
 
-      FlutterBackgroundService().on("ice-candidate").listen((data)async {
-          log('12345 in Ice Caniddate');
-        
+      socket!.on("ice-candidate", (data)async {
         String candidate = data!["candidate"]["candidate"];
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
 
       },);
-   
+      
     }
 
   }
 
+   listenSocket()async{
+      
+      socket!.on('left-call', (data) {
+        socket?.emit('left-call');
+        SignalService.stateController.sink.add(StateDataToUI.exitCall.name);
+      },);
+
+      socket!.on('call-denied',(data) {
+        socket?.emit('call-denied');
+      },);      
+
+  }
+
   _finishCall(){
-    FlutterBackgroundService().on('left-call').listen((event) => _navigateBack(),);
-    FlutterBackgroundService().on('call-denied').listen((event) => _navigateBack(),);
+    socket?.on('left-call', (event)=> _navigateBack());
+    socket?.on('call-denied', (event)=> _navigateBack());
   }
 
   _toggleAudio() {
@@ -197,7 +217,7 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   _leaveCall()async {
-    FlutterBackgroundService().invoke('leave-call',{'data':widget.remoteId});
+    socket?.emit('leave-call',{'data':widget.remoteId});
     _navigateBack();
   }
 
@@ -206,6 +226,10 @@ class _CallScreenState extends State<CallScreen> {
         if (Navigator.canPop(context)) Navigator.of(context).pop();
   }
   
+
+  
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

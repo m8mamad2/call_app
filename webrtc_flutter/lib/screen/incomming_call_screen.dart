@@ -2,7 +2,6 @@ import 'package:callapp/screen/call_screen.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:callapp/utils/widget/animated_circle_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 
 class IncommingCallScreen extends StatelessWidget {
   final String? fromId;
@@ -39,11 +38,9 @@ class IncommingCallScreen extends StatelessWidget {
                       child: Material(
                         shape: const CircleBorder(),
                         child: InkWell(
-                          // onTap: ()=> SignalService().acceptCall(context, fromId!),
                           onTap: (){
-                            FlutterBackgroundService().invoke('accept-call', {'data':fromId});
+                            // FlutterBackgroundService().invoke('accept-call', {'data':fromId});
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => CallScreen(isCaller: false, remoteId: fromId,),));
-                            // SignalService().acceptCall(context, fromId!);
                           },
                           child: Container(
                               padding: const EdgeInsets.all(30),
@@ -69,7 +66,8 @@ class IncommingCallScreen extends StatelessWidget {
                         child: InkWell(
                           onTap: ()async{
                             // await NotificationService().cancleAllNotif();
-                            FlutterBackgroundService().invoke('deny-call',{'data':fromId});},
+                            // FlutterBackgroundService().invoke('deny-call',{'data':fromId})
+                            ;},
                             
                           child: Container(
                             padding: const EdgeInsets.all(30),

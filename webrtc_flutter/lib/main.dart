@@ -14,8 +14,6 @@ void main() async {
   await NotificationService().init();
   await NotificationService().initListenerNotif();
 
-  //* Run Task in Bacground
-  await BackgroundService.initializeService();
 
   runApp( const MyApp() );
 
