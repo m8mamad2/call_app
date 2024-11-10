@@ -80,14 +80,14 @@ class _CallScreenState extends State<CallScreen> {
 
   _setupConnection() async {
 
-    _rtcPeerConnection = await createPeerConnection( kIceConfiguration );
+    _rtcPeerConnection = await createPeerConnection( kIceConfiguration, config);
 
     _rtcPeerConnection!.onTrack = (track) {
       _remoteRTCRenderer.srcObject = track.streams[0];
       setState(() {});
     };
 
-    _localStream = await navigator.mediaDevices.getUserMedia({ 'audio': true, 'video': true });
+    _localStream = await navigator.mediaDevices.getUserMedia(mediaConstranis);
 
     _localStream!.getTracks().forEach((track) async{
       await _rtcPeerConnection!.addTrack(track, _localStream!);
@@ -100,7 +100,7 @@ class _CallScreenState extends State<CallScreen> {
     if(widget.isCaller){
       
       _rtcPeerConnection!.onIceCandidate = (candidte)async=> 
-        await Future.delayed( const Duration(seconds: 1), ()=> _iceCandidates.add(candidte));
+        await Future.delayed( const Duration(microseconds: 1), ()=> _iceCandidates.add(candidte));
 
       socket!.on('call-accepted', (data)async {
 
@@ -144,7 +144,7 @@ class _CallScreenState extends State<CallScreen> {
     if(!widget.isCaller){
 
       _rtcPeerConnection!.onIceCandidate = (iceCandidate)async{
-        log('12345 in Send Candiate');
+        await Future.delayed(const Duration(milliseconds: 1));
         final data  = {
               "to": widget.remoteId,
               "candidate": {

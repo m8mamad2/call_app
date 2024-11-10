@@ -9,3 +9,21 @@ const kIceConfiguration = {
       }
     ]
 };
+
+const Map<String, dynamic> config = {
+      'mandatory': {},
+      'optional': [ {'DtlsSrtpKeyAgreement': true} ]
+  };
+
+    const mediaConstranis = {
+    'audio': true,
+    'video': {
+      'mandatory': {
+        'minWidth': '640', 
+        'minHeight': '480',
+        'minFrameRate': '30',
+      },
+      'facingMode': 'user',
+      'optional': [],
+    }
+  };
