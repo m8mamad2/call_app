@@ -1,4 +1,5 @@
 import 'package:callapp/screen/call_screen.dart';
+import 'package:callapp/service/signaling_service.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:callapp/utils/widget/animated_circle_button.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,8 @@ class IncommingCallScreen extends StatelessWidget {
                         child: InkWell(
                           onTap: (){
                             // FlutterBackgroundService().invoke('accept-call', {'data':fromId});
+                            SignalService.socket?.emit('accept-call', {'data':fromId});
+
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => CallScreen(isCaller: false, remoteId: fromId,),));
                           },
                           child: Container(

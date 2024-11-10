@@ -110,7 +110,7 @@ class NotificationController {
   static Future <void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     await Future.delayed(const Duration(seconds: 1), (){
       // FlutterBackgroundService().invoke('incoming-call');
-      SignalService.stateController.sink.add(StateDataToUI.commingCall.name);
+      SignalService.stateController.sink.add({ "state":StateDataToUI.commingCall.name, "from": "" });
     } );
   }
   

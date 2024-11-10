@@ -105,7 +105,7 @@ class _CallScreenState extends State<CallScreen> {
       socket!.on('call-accepted', (data)async {
 
         
-        SignalService.stateController.sink.add( StateDataToUI.exitCall.name );
+        // SignalService.stateController.sink.add( StateDataToUI.exitCall.name );
 
         RTCSessionDescription offer = await _rtcPeerConnection!.createOffer();
         await _rtcPeerConnection!.setLocalDescription(offer);
@@ -184,7 +184,7 @@ class _CallScreenState extends State<CallScreen> {
       
       socket!.on('left-call', (data) {
         socket?.emit('left-call');
-        SignalService.stateController.sink.add(StateDataToUI.exitCall.name);
+        SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
       },);
 
       socket!.on('call-denied',(data) {

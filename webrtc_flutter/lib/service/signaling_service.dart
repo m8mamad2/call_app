@@ -9,36 +9,43 @@ import 'package:socket_io_client/socket_io_client.dart';
 
 
 
-// const String socketUrl = 'ws://192.168 .10.232:8080';
-const String socketUrl = 'ws://79a1-172-80-252-151.ngrok-free.app';
+const String socketUrl = 'ws://192.168.10.232:8080';
+// const String socketUrl = 'ws://79a1-172-80-252-151.ngrok-free.app';
 
+enum StateDataToUI  { commingCall, exitCall, initiData }
 
 class SignalService {
 
+  static late Socket? socket;
+  
   static StreamController stateController = StreamController.broadcast();
+
   static StreamController whoAreYouController = StreamController.broadcast();
+
   static bool isConnected = false;
 
-  static late Socket? socket;
-
   static init() {
-    if(isConnected)return ;
-    socket = io(
-      socketUrl, 
-      {
-        "transports": ['websocket'],
-        "query": {"callerId": generateRandomSixDigitNumber()},
-      },
-    );
-    socket!.connect();
-    isConnected = true;
+    if(isConnected)
+      stateController.sink.add({ "state":StateDataToUI.initiData.name, "from": "" });
+    else{
+
+      socket = io(
+        socketUrl, 
+        {
+          "transports": ['websocket'],
+          "query": {"callerId": generateRandomSixDigitNumber()},
+        },
+      );
+      socket!.connect();
+      isConnected = true;
+    }
   }
 
   static listen()async{
 
 
       socket!.onConnect((data) {
-        stateController.sink.add(StateDataToUI.initiData.name);
+        stateController.sink.add({ "state":StateDataToUI.initiData.name, "from": '' });
         print("-----------------------Socket connected !!");
       });
 
@@ -52,7 +59,7 @@ class SignalService {
       });
 
       socket!.on('you-are', (data) async {
-        whoAreYouController.sink.add(data['data']['id']);
+        whoAreYouController.sink.add(data['id']);
       });
 
       socket!.on('rejected_call', (data) => stateController.sink.add({ "state":StateDataToUI.exitCall.name, }) );
@@ -63,4 +70,3 @@ class SignalService {
 
 }
 
-enum StateDataToUI  { commingCall, exitCall, initiData }

@@ -34,13 +34,13 @@ class _MainScreenState extends State<MainScreen> {
         stream: SignalService.stateController.stream,
         builder: (context, snapshot) {
 
-          final screenState = snapshot.data?['data'] ?? 'init';
+          final screenState = snapshot.data?['state'] ?? 'init';
           final fromId = snapshot.data?['from'];
 
           switch(screenState){
             case 'initiData':  return const HomeScreen();
             case 'exitCall' :  return const HomeScreen();
-            case 'commingCall':return IncommingCallScreen(fromId: fromId,);
+            case 'commingCall':return IncommingCallScreen(fromId: fromId.toString(),);
             default: return const HomeScreen();
           }
           
