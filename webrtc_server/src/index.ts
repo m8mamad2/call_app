@@ -42,6 +42,7 @@ io.on('connection', (socket)=> {
     // when an incoming call is accepted
     socket.on("accept-call", ({ to })=> {
         console.log("call accepted by ", socket['user'], " from ", to)
+        console.log('------- ' + to)
         socket.broadcast.emit("call-accepted", { to })
     })
     

@@ -41,7 +41,7 @@ class IncommingCallScreen extends StatelessWidget {
                         child: InkWell(
                           onTap: (){
                             // FlutterBackgroundService().invoke('accept-call', {'data':fromId});
-                            SignalService.socket?.emit('accept-call', {'data':fromId});
+                            SignalService.socket?.emit('accept-call', { 'to' : fromId });
 
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => CallScreen(isCaller: false, remoteId: fromId,),));
                           },
@@ -70,6 +70,7 @@ class IncommingCallScreen extends StatelessWidget {
                           onTap: ()async{
                             // await NotificationService().cancleAllNotif();
                             // FlutterBackgroundService().invoke('deny-call',{'data':fromId})
+                            SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, });
                             ;},
                             
                           child: Container(

@@ -100,15 +100,15 @@ class _CallScreenState extends State<CallScreen> {
     if(widget.isCaller){
       
       _rtcPeerConnection!.onIceCandidate = (candidte)async=> 
-        await Future.delayed( const Duration(microseconds: 1), ()=> _iceCandidates.add(candidte));
+        await Future.delayed( const Duration(milliseconds: 1), ()=> _iceCandidates.add(candidte));
 
       socket!.on('call-accepted', (data)async {
 
         
-        // SignalService.stateController.sink.add( StateDataToUI.exitCall.name );
+        SignalService.stateController.sink.add( { "state":StateDataToUI.exitCall.name, "from": "" } );
 
         RTCSessionDescription offer = await _rtcPeerConnection!.createOffer();
-        await _rtcPeerConnection!.setLocalDescription(offer);
+        await _rtcPeerConnection!.setLocalDescription(fixSdp(offer));
         final dataToSend = { 'to': widget.remoteId, 'offer': offer.toMap(), };
         socket?.emit('offer', dataToSend);
 
@@ -116,9 +116,8 @@ class _CallScreenState extends State<CallScreen> {
       },);
 
       socket!.on('offer-answer',(data) async{
-        socket?.emit('offer-answer', data);
         RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
-          await _rtcPeerConnection?.setRemoteDescription(remoteOffer);
+          await _rtcPeerConnection?.setRemoteDescription(fixSdp(remoteOffer));
           for ( var iceCandidate in _iceCandidates ) {
             final data = {
               "to": widget.remoteId,
@@ -133,14 +132,13 @@ class _CallScreenState extends State<CallScreen> {
       },);
 
       socket!.on("ice-candidate", (data)async {
-        socket?.emit("ice-candidate",data);
         String candidate = data!["candidate"]["candidate"];
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
       },);
-      
     }
+    
     if(!widget.isCaller){
 
       _rtcPeerConnection!.onIceCandidate = (iceCandidate)async{
@@ -157,12 +155,11 @@ class _CallScreenState extends State<CallScreen> {
     };
 
       socket!.on('offer', (data)async {
-          log('12345 in Offer');
             await _rtcPeerConnection!.setRemoteDescription(
               RTCSessionDescription(data!['offer']['sdp'], data['offer']['type'])
             );
             RTCSessionDescription? answer = await _rtcPeerConnection?.createAnswer();
-            _rtcPeerConnection!.setLocalDescription(answer!);
+            _rtcPeerConnection!.setLocalDescription(fixSdp(answer!));
             final dataForSend = { "answer": answer.toMap(), "to": widget.remoteId, };
             socket?.emit("offer-answer", dataForSend);
             
@@ -175,7 +172,6 @@ class _CallScreenState extends State<CallScreen> {
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
 
       },);
-      
     }
 
   }
@@ -222,13 +218,11 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   _navigateBack(){
+    SignalService.stateController.sink.add( { "state":StateDataToUI.exitCall.name } );
     if(mounted)
         if (Navigator.canPop(context)) Navigator.of(context).pop();
   }
   
-
-  
-
 
   @override
   Widget build(BuildContext context) {

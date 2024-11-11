@@ -1,4 +1,6 @@
 
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 const kIceConfiguration = {
     'iceServers': [
       {
@@ -9,6 +11,7 @@ const kIceConfiguration = {
       }
     ]
 };
+
 
 const Map<String, dynamic> config = {
       'mandatory': {},
@@ -27,3 +30,11 @@ const Map<String, dynamic> config = {
       'optional': [],
     }
   };
+
+
+   RTCSessionDescription fixSdp(RTCSessionDescription s) {
+      var sdp = s.sdp;
+      s.sdp = sdp!.replaceAll('profile-level-id=640c1f', 'profile-level-id=42e032');
+      s.sdp = sdp.replaceAll("useinbandfec=1", 'useinbandfec=1;stereo=1;maxaveragebitrate=510000');
+      return s;
+    }
