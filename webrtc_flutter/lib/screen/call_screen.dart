@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:callapp/service/signaling_service.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:callapp/utils/constans/webrtc_constans.dart';
@@ -41,7 +39,6 @@ class _CallScreenState extends State<CallScreen> {
     _remoteRTCRenderer.initialize();
 
     _setupConnection();
-    _finishCall();
 
     super.initState();
   }
@@ -102,6 +99,7 @@ class _CallScreenState extends State<CallScreen> {
       _rtcPeerConnection!.onIceCandidate = (candidte)async=> 
         await Future.delayed( const Duration(milliseconds: 1), ()=> _iceCandidates.add(candidte));
 
+
       socket!.on('call-accepted', (data)async {
 
         
@@ -116,7 +114,7 @@ class _CallScreenState extends State<CallScreen> {
       },);
 
       socket!.on('offer-answer',(data) async{
-        RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
+          RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
           await _rtcPeerConnection?.setRemoteDescription(fixSdp(remoteOffer));
           for ( var iceCandidate in _iceCandidates ) {
             final data = {
@@ -127,7 +125,7 @@ class _CallScreenState extends State<CallScreen> {
                 "sdpMLineIndex": iceCandidate.sdpMLineIndex,
               }
             };
-          socket?.emit("ice-candidate",data);
+            socket?.emit("ice-candidate",data);
           }
       },);
 
@@ -170,28 +168,19 @@ class _CallScreenState extends State<CallScreen> {
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
-
       },);
     }
 
-  }
+    socket?.on('left-call', (event){
+      SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
+      _navigateBack();
+      });
 
-   listenSocket()async{
-      
-      socket!.on('left-call', (data) {
-        socket?.emit('left-call');
-        SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
-      },);
+    socket?.on('call-denied', (event){
+      SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
+      _navigateBack();
+      });
 
-      socket!.on('call-denied',(data) {
-        socket?.emit('call-denied');
-      },);      
-
-  }
-
-  _finishCall(){
-    socket?.on('left-call', (event)=> _navigateBack());
-    socket?.on('call-denied', (event)=> _navigateBack());
   }
 
   _toggleAudio() {
@@ -251,7 +240,7 @@ class _CallScreenState extends State<CallScreen> {
                 bottom: 100,
                 height:  300,
                 // width: 120,
-                child: Container(
+                child: SizedBox(
                   width: kWidth(context)*0.4,
                   height: kHeight(context)*0.3,
                   child: ClipRRect(
