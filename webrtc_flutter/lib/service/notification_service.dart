@@ -1,9 +1,10 @@
 
 
 import 'dart:async';
-import 'dart:typed_data';
+// import 'dart:typed_data';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:callapp/service/signaling_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 
@@ -42,7 +43,6 @@ class NotificationService{
           playSound: true,
           vibrationPattern: vibrationPattern,
           enableLights: true,
-          // soundSource: 'resource://raw/ring',
           ),
         
         //? background Notif
@@ -77,13 +77,11 @@ class NotificationService{
       content: NotificationContent(
         id: 123, 
         channelKey: 'channel1',
-        title: ' 📞 Calling From Home ',
+        title: ' 📞 Calling',
         body: 'Please On Tap The Notification',
         notificationLayout: NotificationLayout.BigText,
         badge: 1,
         wakeUpScreen: true,
-        //! fullScreenIntent: true,
-        // customSound: 'resource://raw/ring',
         largeIcon: 'resource://drawable/call', ),
 
       actionButtons: [
@@ -109,7 +107,6 @@ class NotificationController {
   @pragma("vm:entry-point")
   static Future <void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     await Future.delayed(const Duration(seconds: 1), (){
-      // FlutterBackgroundService().invoke('incoming-call');
       SignalService.stateController.sink.add({ "state":StateDataToUI.commingCall.name, "from": "" });
     } );
   }

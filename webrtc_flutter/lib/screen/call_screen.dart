@@ -16,13 +16,17 @@ class CallScreen extends StatefulWidget {
 class _CallScreenState extends State<CallScreen> {
 
 
+  // Video Rendering
   final _localRTCRenderer = RTCVideoRenderer();
   final _remoteRTCRenderer = RTCVideoRenderer();
 
+  // Socket Instane 
   final socket = SignalService.socket;
   
+  // manage stream of media such as audio and video,
   MediaStream? _localStream;
 
+  // manage connection between peer 
   RTCPeerConnection? _rtcPeerConnection;
 
   final List<RTCIceCandidate> _iceCandidates = [];
@@ -77,25 +81,32 @@ class _CallScreenState extends State<CallScreen> {
 
   _setupConnection() async {
 
+    
+    // stablish a WebRTC P2P connection between two devices
     _rtcPeerConnection = await createPeerConnection( kIceConfiguration, config);
 
-    _rtcPeerConnection!.onTrack = (track) {
+    // listem for remote mediatrack and added to RTCVideoRenderer object
+    _rtcPeerConnection!.onTrack = (RTCTrackEvent track) {
       _remoteRTCRenderer.srcObject = track.streams[0];
       setState(() {});
     };
 
+    // get local Media
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstranis);
 
+    // add localTrack to peerConnetion
     _localStream!.getTracks().forEach((track) async{
       await _rtcPeerConnection!.addTrack(track, _localStream!);
     });
 
+    // set source for local video renderer
     _localRTCRenderer.srcObject = _localStream;
 
     setState(() {});
 
     if(widget.isCaller){
       
+      // listen for when get IceCandidate & add iceCandidate to List _iceCandidates
       _rtcPeerConnection!.onIceCandidate = (candidte)async=> 
         await Future.delayed( const Duration(milliseconds: 1), ()=> _iceCandidates.add(candidte));
 
@@ -105,8 +116,13 @@ class _CallScreenState extends State<CallScreen> {
         
         SignalService.stateController.sink.add( { "state":StateDataToUI.exitCall.name, "from": "" } );
 
+        // create SDP offer
         RTCSessionDescription offer = await _rtcPeerConnection!.createOffer();
+        
+        // set Local SDP (Offer) for peerConnection
         await _rtcPeerConnection!.setLocalDescription(fixSdp(offer));
+        
+        // send offer to Signaling Server
         final dataToSend = { 'to': widget.remoteId, 'offer': offer.toMap(), };
         socket?.emit('offer', dataToSend);
 
@@ -114,8 +130,14 @@ class _CallScreenState extends State<CallScreen> {
       },);
 
       socket!.on('offer-answer',(data) async{
+
+          // get Answer From Another User
           RTCSessionDescription remoteOffer = RTCSessionDescription(data!['answer']['sdp'], data['answer']['type']);
+
+          // set SDP Answer to peerConnection
           await _rtcPeerConnection?.setRemoteDescription(fixSdp(remoteOffer));
+
+          // send IceCandidate to Signaling Server
           for ( var iceCandidate in _iceCandidates ) {
             final data = {
               "to": widget.remoteId,
@@ -130,9 +152,12 @@ class _CallScreenState extends State<CallScreen> {
       },);
 
       socket!.on("ice-candidate", (data)async {
+        // listen for IceCandidate 
         String candidate = data!["candidate"]["candidate"];
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
+        
+        // set IceCandidate of another user 
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
       },);
     }
@@ -140,6 +165,7 @@ class _CallScreenState extends State<CallScreen> {
     if(!widget.isCaller){
 
       _rtcPeerConnection!.onIceCandidate = (iceCandidate)async{
+        // listen for when get IceCandidate and send to signaling server
         await Future.delayed(const Duration(milliseconds: 1));
         final data  = {
               "to": widget.remoteId,
@@ -153,36 +179,48 @@ class _CallScreenState extends State<CallScreen> {
     };
 
       socket!.on('offer', (data)async {
-            await _rtcPeerConnection!.setRemoteDescription(
-              RTCSessionDescription(data!['offer']['sdp'], data['offer']['type'])
-            );
-            RTCSessionDescription? answer = await _rtcPeerConnection?.createAnswer();
-            _rtcPeerConnection!.setLocalDescription(fixSdp(answer!));
-            final dataForSend = { "answer": answer.toMap(), "to": widget.remoteId, };
-            socket?.emit("offer-answer", dataForSend);
-            
+          // when comes offer from another user, set it for peerConnection
+          await _rtcPeerConnection!.setRemoteDescription(RTCSessionDescription(data!['offer']['sdp'], data['offer']['type']));
+          
+          // create SDP Answer 
+          RTCSessionDescription? answer = await _rtcPeerConnection?.createAnswer();
+          
+          // set SDP Answer 
+          _rtcPeerConnection!.setLocalDescription(fixSdp(answer!));
+
+
+          // send SDP Answer to Signaling Server
+          final dataForSend = { "answer": answer.toMap(), "to": widget.remoteId, };
+          socket?.emit("offer-answer", dataForSend);
         },);
 
       socket!.on("ice-candidate", (data)async {
+
+        // listen for IceCandidate
         String candidate = data!["candidate"]["candidate"];
         String sdpMid = data["candidate"]["sdpMid"];
         int sdpMLineIndex = data["candidate"]["sdpMLineIndex"];
+
+        // set IceCandidate of another user
         await _rtcPeerConnection?.addCandidate( RTCIceCandidate(candidate, sdpMid, sdpMLineIndex) );
       },);
     }
 
     socket?.on('left-call', (event){
+      // if User exit from Call
       SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
       _navigateBack();
       });
 
     socket?.on('call-denied', (event){
+      // if User Not Excepted call
       SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, "from": "" });
       _navigateBack();
       });
 
   }
 
+  // To enable or disable Audio
   _toggleAudio() {
     isAudioOn = !isAudioOn;
 
@@ -192,6 +230,7 @@ class _CallScreenState extends State<CallScreen> {
     setState(() {});
   }
 
+  // To enable or disable Video
   _toggleVideo() {
     isVideoOn = !isVideoOn;
 
@@ -201,6 +240,7 @@ class _CallScreenState extends State<CallScreen> {
     setState(() {});
   }
 
+  // For Leave Call
   _leaveCall()async {
     socket?.emit('leave-call',{'data':widget.remoteId});
     _navigateBack();
@@ -218,7 +258,8 @@ class _CallScreenState extends State<CallScreen> {
     return Scaffold(
       body:  Stack(
           children: [
-
+            
+            // For Render Local Medi
             Positioned.fill(
               child: RTCVideoView(
                 _remoteRTCRenderer,
@@ -234,6 +275,7 @@ class _CallScreenState extends State<CallScreen> {
               ),
             ),
 
+            // For Render Remote Medi
             if( _localRTCRenderer.srcObject != null )
               Positioned(
                 right: 16,
@@ -255,7 +297,7 @@ class _CallScreenState extends State<CallScreen> {
               ),
 
             
-            // stream controls
+            // Action
             Positioned(
               left: 0,
               right: 0,

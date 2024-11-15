@@ -91,11 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Expanded(
                       child: InkWell(
                         onTap: () async{
+
                           if(numberController.text.isEmpty)return await errorDialgo(context, 'Please Enter a Number !');
-
                           SignalService.socket?.emit('start-call', {'to':numberController.text.trim()});
-
-                            
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => CallScreen(isCaller: true, remoteId: numberController.text,),));
 

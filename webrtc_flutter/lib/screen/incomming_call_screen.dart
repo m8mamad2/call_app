@@ -1,4 +1,5 @@
 import 'package:callapp/screen/call_screen.dart';
+import 'package:callapp/service/notification_service.dart';
 import 'package:callapp/service/signaling_service.dart';
 import 'package:callapp/utils/constans/sizes.dart';
 import 'package:callapp/utils/widget/animated_circle_button.dart';
@@ -24,7 +25,7 @@ class IncommingCallScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20,),
-            const Text('Call Form',style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.w400),),
+            Text('Call Form ${fromId ??  ''}',style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.w400),),
             const Text('HOME',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold , fontSize: 22),),
             
             const Spacer(),
@@ -40,9 +41,7 @@ class IncommingCallScreen extends StatelessWidget {
                         shape: const CircleBorder(),
                         child: InkWell(
                           onTap: (){
-                            // FlutterBackgroundService().invoke('accept-call', {'data':fromId});
                             SignalService.socket?.emit('accept-call', { 'to' : fromId });
-
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => CallScreen(isCaller: false, remoteId: fromId,),));
                           },
                           child: Container(
@@ -68,11 +67,9 @@ class IncommingCallScreen extends StatelessWidget {
                         shape: const CircleBorder(),
                         child: InkWell(
                           onTap: ()async{
-                            // await NotificationService().cancleAllNotif();
-                            // FlutterBackgroundService().invoke('deny-call',{'data':fromId})
+                            await NotificationService().cancleAllNotif();
                             SignalService.stateController.sink.add({ "state":StateDataToUI.exitCall.name, });
-                            ;},
-                            
+                          },
                           child: Container(
                             padding: const EdgeInsets.all(30),
                             decoration: BoxDecoration(
